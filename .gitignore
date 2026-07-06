@@ -1,2 +1,17 @@
 # Ignore specific files
 Notes
+
+# Go
+apps/order-api/order-api
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Java / Maven
+target/
+*.class
+
+# OS
+.DS_Store
