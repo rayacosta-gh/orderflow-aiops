@@ -1,0 +1,46 @@
+name: terraform-security
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/terraform-security.yml"
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/terraform-security.yml"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  checkov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # continue-on-error here so the SARIF upload below still runs on
+      # failed checks; the job is explicitly failed afterward instead,
+      # which keeps this blocking without losing the Security-tab report.
+      - name: Run Checkov
+        id: checkov
+        uses: bridgecrewio/checkov-action@v12.3114.0
+        continue-on-error: true
+        with:
+          directory: infra/terraform
+          framework: terraform
+          output_format: cli,sarif
+          output_file_path: console,results.sarif
+          soft_fail: false
+
+      - name: Upload results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+
+      - name: Fail if Checkov found blocking issues
+        if: steps.checkov.outcome == 'failure'
+        run: exit 1
