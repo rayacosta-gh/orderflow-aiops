@@ -38,7 +38,7 @@ jobs:
         run: pytest -v
 
       - name: Scan dependencies and source (blocking)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: apps/fulfillment-worker
@@ -57,7 +57,7 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       - name: Scan image (blocking)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
           severity: CRITICAL,HIGH
