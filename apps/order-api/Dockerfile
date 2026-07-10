@@ -1,10 +1,10 @@
-FROM golang:1.23-alpine AS build
+FROM golang:1.26-alpine AS build
 WORKDIR /src
 COPY go.mod ./
 COPY main.go ./
 RUN CGO_ENABLED=0 go build -o /order-api .
 
-FROM alpine:3.20
+FROM alpine:3.24
 RUN adduser -D -H appuser
 USER appuser
 COPY --from=build /order-api /order-api
