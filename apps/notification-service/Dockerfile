@@ -6,6 +6,9 @@ COPY src ./src
 RUN mvn -B package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
+# Base image tags are a stale snapshot; patch OS packages at build time
+# rather than only relying on the next upstream image rebuild.
+RUN apk update && apk upgrade --no-cache
 RUN adduser -D appuser
 USER appuser
 COPY --from=build /src/target/notification-service-0.1.0.jar /app.jar
