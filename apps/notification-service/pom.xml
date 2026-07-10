@@ -20,6 +20,13 @@
     <java.version>21</java.version>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
+    <!-- Spring Boot 3.5.3 manages jackson-databind 2.19.1 and Tomcat
+         10.1.42, both still vulnerable (CVE-2026-54512, CVE-2026-41293)
+         to versions newer than what 3.5.3's dependency management
+         pins. Override both explicitly rather than waiting on the
+         next Spring Boot patch release. -->
+    <jackson-bom.version>2.22.1</jackson-bom.version>
+    <tomcat.version>10.1.57</tomcat.version>
   </properties>
 
   <dependencies>
