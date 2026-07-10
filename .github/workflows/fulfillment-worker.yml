@@ -1,0 +1,80 @@
+name: fulfillment-worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/fulfillment-worker/**"
+      - ".github/workflows/fulfillment-worker.yml"
+  pull_request:
+    paths:
+      - "apps/fulfillment-worker/**"
+      - ".github/workflows/fulfillment-worker.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository }}/fulfillment-worker
+
+jobs:
+  build-test-scan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/fulfillment-worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Test
+        run: pytest -v
+
+      - name: Scan dependencies and source (blocking)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: apps/fulfillment-worker
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          ignore-unfixed: true
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/fulfillment-worker
+          load: true
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Scan image (blocking)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          ignore-unfixed: true
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker tag "$IMAGE_NAME:$GITHUB_SHA" "$IMAGE_NAME:latest"
+          docker push "$IMAGE_NAME:$GITHUB_SHA"
+          docker push "$IMAGE_NAME:latest"
