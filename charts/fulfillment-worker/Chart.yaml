@@ -1,0 +1,6 @@
+apiVersion: v2
+name: fulfillment-worker
+description: Order fulfillment event consumer and state machine
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
