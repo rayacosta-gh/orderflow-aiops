@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fulfillment-worker
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rayacosta-gh/orderflow-aiops
+    targetRevision: main
+    path: charts/fulfillment-worker
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: orderflow
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
