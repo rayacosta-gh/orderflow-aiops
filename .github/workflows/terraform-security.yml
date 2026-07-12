@@ -3,13 +3,11 @@ name: terraform-security
 on:
   push:
     branches: [main]
-    paths:
-      - "infra/terraform/**"
-      - ".github/workflows/terraform-security.yml"
   pull_request:
-    paths:
-      - "infra/terraform/**"
-      - ".github/workflows/terraform-security.yml"
+  # No path filter, deliberately: this is the one branch-protection-required
+  # check, and a path-filtered required check never reports (and blocks
+  # merges forever) on a PR that doesn't touch a matching path. Checkov is
+  # cheap enough (~30s over a small directory) to just always run.
 
 permissions:
   contents: read
