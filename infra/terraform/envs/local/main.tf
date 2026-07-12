@@ -17,3 +17,11 @@ module "cluster" {
   cluster_name = "orderflow"
   worker_count = 0
 }
+
+module "argocd" {
+  source = "../../modules/argocd"
+
+  kubeconfig_path = module.cluster.kubeconfig_path
+
+  depends_on = [module.cluster]
+}
