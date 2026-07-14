@@ -1,0 +1,46 @@
+networks:
+  jenkins-internal:
+
+volumes:
+  jenkins_home:
+  internal_registry_data:
+
+services:
+  jenkins-controller:
+    build: ./controller
+    env_file: .env
+    ports:
+      - "8090:8080"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - ./secrets/agent_ssh_key:/run/secrets/agent_ssh_key:ro
+    networks:
+      - jenkins-internal
+
+  jenkins-agent:
+    build: ./agent
+    env_file: .env
+    # No ports published to the host - only the controller (inside this
+    # compose network) needs to reach the agent's SSH port.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - jenkins-internal
+
+  internal-registry:
+    image: registry:3.1.1
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: "OrderFlow internal registry"
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    volumes:
+      - ./registry-auth/htpasswd:/auth/htpasswd:ro
+      - internal_registry_data:/var/lib/registry
+    # Not published to the host's public interface - only reachable from
+    # other containers on this network (the agent, for docker push), and
+    # to localhost for our own verification. This is the boundary GitHub
+    # Actions' hosted runners structurally cannot cross.
+    ports:
+      - "127.0.0.1:5050:5000"
+    networks:
+      - jenkins-internal
