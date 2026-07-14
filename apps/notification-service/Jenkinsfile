@@ -2,7 +2,11 @@ pipeline {
     agent { label 'docker && maven' }
 
     environment {
-        REGISTRY = "internal-registry:5000"
+        // The agent does Docker-outside-of-Docker (commands forward to the
+        // host daemon via the mounted socket), so pushes run outside this
+        // compose network's namespace and can't resolve internal-registry by
+        // DNS - use the registry's host-published port instead.
+        REGISTRY = "localhost:5050"
         IMAGE    = "${REGISTRY}/notification-service"
     }
 
