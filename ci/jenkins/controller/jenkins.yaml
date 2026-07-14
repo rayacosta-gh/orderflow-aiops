@@ -40,7 +40,13 @@ credentials:
           # radius boundary (scenario #4) is exactly "Jenkins never has a
           # credential that reaches further than this."
           - usernamePassword:
-              scope: SYSTEM
+              # GLOBAL, not SYSTEM: this credential is used from inside a
+              # pipeline build step (withCredentials), and SYSTEM-scoped
+              # credentials are deliberately invisible to jobs - only to
+              # Jenkins' own internal operations (agent-ssh-key above is
+              # SYSTEM correctly, since connecting to the agent is exactly
+              # that kind of internal operation, not a job using it).
+              scope: GLOBAL
               id: "internal-registry"
               username: "jenkins"
               password: "${REGISTRY_PASSWORD}"
