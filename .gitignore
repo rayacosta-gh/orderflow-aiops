@@ -23,3 +23,8 @@ target/
 crash.log
 *.tfvars
 infra/terraform/envs/*/kubeconfig
+
+# Jenkins
+ci/jenkins/secrets/
+ci/jenkins/.env
+ci/jenkins/registry-auth/

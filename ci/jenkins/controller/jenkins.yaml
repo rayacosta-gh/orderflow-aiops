@@ -1,0 +1,64 @@
+jenkins:
+  systemMessage: "OrderFlow Jenkins - Phase 5: notification-service, on-prem/regulated pipeline pattern"
+  numExecutors: 0
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  nodes:
+    - permanent:
+        name: "docker-agent"
+        remoteFS: "/home/jenkins/agent"
+        numExecutors: 2
+        labelString: "docker maven"
+        launcher:
+          ssh:
+            host: "jenkins-agent"
+            port: 22
+            credentialsId: "agent-ssh-key"
+            sshHostKeyVerificationStrategy:
+              nonVerifyingKeyVerificationStrategy: {}
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - basicSSHUserPrivateKey:
+              scope: SYSTEM
+              id: "agent-ssh-key"
+              username: "jenkins"
+              privateKeySource:
+                directEntry:
+                  privateKey: "${readFile:/run/secrets/agent_ssh_key}"
+          # Scoped only to the internal registry - this credential has no
+          # authority over GHCR or anything else. Enforcing the blast-
+          # radius boundary (scenario #4) is exactly "Jenkins never has a
+          # credential that reaches further than this."
+          - usernamePassword:
+              scope: SYSTEM
+              id: "internal-registry"
+              username: "jenkins"
+              password: "${REGISTRY_PASSWORD}"
+
+jobs:
+  - script: >
+      pipelineJob('notification-service') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/rayacosta-gh/orderflow-aiops.git')
+                }
+                branch('*/main')
+              }
+            }
+            scriptPath('apps/notification-service/Jenkinsfile')
+          }
+        }
+      }

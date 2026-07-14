@@ -1,0 +1,66 @@
+pipeline {
+    agent { label 'docker && maven' }
+
+    environment {
+        REGISTRY = "internal-registry:5000"
+        IMAGE    = "${REGISTRY}/notification-service"
+    }
+
+    // Local Jenkins isn't internet-reachable, so GitHub can't deliver a
+    // webhook to it - polling is the realistic option here, not a tunnel.
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
+    stages {
+        stage('Test') {
+            steps {
+                dir('apps/notification-service') {
+                    sh 'mvn -B test'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir('apps/notification-service') {
+                    sh 'mvn -B -DskipTests package'
+                }
+            }
+        }
+
+        stage('Docker build') {
+            steps {
+                dir('apps/notification-service') {
+                    sh "docker build -t ${IMAGE}:${BUILD_NUMBER} ."
+                }
+            }
+        }
+
+        // This is the one destination GitHub Actions' hosted runners cannot
+        // reach - internal-registry only exists on this compose network.
+        // The credential used here has no authority over GHCR or anything
+        // else (see ci/jenkins/controller/jenkins.yaml).
+        stage('Push to internal registry') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'internal-registry',
+                    usernameVariable: 'REG_USER',
+                    passwordVariable: 'REG_PASS'
+                )]) {
+                    sh '''
+                        echo "$REG_PASS" | docker login "$REGISTRY" -u "$REG_USER" --password-stdin
+                        docker push "$IMAGE:$BUILD_NUMBER"
+                        docker logout "$REGISTRY"
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh "docker rmi ${IMAGE}:${BUILD_NUMBER} || true"
+        }
+    }
+}
